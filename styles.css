@@ -1161,6 +1161,12 @@ select:focus {
 .session-choice input {
   accent-color: var(--green);
 }
+.guide-copy {
+  margin: 2px 0 14px;
+  color: #485462;
+  font-size: 13px;
+  line-height: 1.75;
+}
 .auth-back {
   margin-bottom: 15px;
 }

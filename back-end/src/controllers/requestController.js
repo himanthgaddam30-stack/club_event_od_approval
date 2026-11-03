@@ -12,6 +12,15 @@ function safeRequest(request) {
   return result;
 }
 
+function eventCoordinatorView(request) {
+  const result = safeRequest(request);
+  delete result.files;
+  delete result.missedSessions;
+  result.decisions = (result.decisions || []).map(({ stage, action, at }) => ({ stage, action, at }));
+  result.history = (result.history || []).map(({ actor, action, fromStatus, toStatus, at }) => ({ actor, action, fromStatus, toStatus, at }));
+  return result;
+}
+
 export async function createOutside(req, res) {
   const body = parseJsonField(req.body.request, req.body);
   const request = await createOutsideRequest({ ...body, registrationProof: req.file }, req.user);
@@ -43,16 +52,14 @@ export async function listRequests(req, res) {
   }
   if (req.user.role === 'deo' && req.query.queue !== 'true') filter.status = { $in: ['pending_deo', 'attendance_recorded'] };
   const requests = await ODRequest.find(filter).populate('student', 'name studentId department classSection').sort({ createdAt: -1 }).limit(300);
-  res.json({ data: { requests: requests.map(safeRequest), workflow: requests.map(request => ({ requestId: request._id, ...workflowSummary(request) })) } });
+  const serialize = req.user.role === 'event_coordinator' ? eventCoordinatorView : safeRequest;
+  res.json({ data: { requests: requests.map(serialize), workflow: requests.map(request => ({ requestId: request._id, ...workflowSummary(request) })) } });
 }
 
 export async function getRequest(req, res) {
   const request = await getRequestForUser(req.params.id, req.user);
   if (req.user.role === 'event_coordinator') {
-    const limited = safeRequest(request);
-    delete limited.files;
-    delete limited.missedSessions;
-    limited.decisions = limited.decisions.map(({ stage, action, at }) => ({ stage, action, at }));
+    const limited = eventCoordinatorView(request);
     res.json({ data: { request: limited, workflow: workflowSummary(request) } });
     return;
   }

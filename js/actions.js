@@ -493,6 +493,13 @@ document.addEventListener("submit", async (e) => {
     catch (error) { toast(`Signed in, but the workspace could not load: ${error.message}`); }
   } catch (error) { toast(error.message || "Could not sign in."); submit.disabled = false; submit.textContent = "Sign in →"; }
 });
+window.addEventListener("campusod:session-expired", () => {
+  if (!apiMode) return;
+  loggedIn = false; apiMode = false; currentUser = null;
+  ["campusOD.token", "campusOD.user", "campusOD.role", "campusOD.signedIn"].forEach(key => sessionStorage.removeItem(key));
+  page = "Dashboard"; activeId = null; render();
+  toast("Your college session expired. Sign in again to continue.");
+});
 $("#logoutBtn").addEventListener("click", () => {
   loggedIn = false; apiMode = false; currentUser = null;
   ["campusOD.signedIn", "campusOD.role", "campusOD.token", "campusOD.user"].forEach(key => sessionStorage.removeItem(key));

@@ -34,7 +34,7 @@ Login with `POST /api/auth/login`. Send the returned token as `Authorization: Be
 | GET, POST | `/api/events` | Signed-in / Event Coordinator or Admin | List eligible events / create event |
 | GET, PATCH, DELETE | `/api/events/:id` | Scoped / event owner or Admin | Read/update/delete event; events linked to OD requests cannot be deleted |
 | POST | `/api/events/:id/register` | Student | Register and create the linked OD request |
-| GET | `/api/events/:id/requests` | Event owner, Admin, Director, DEO | View registrations and request progress |
+| GET | `/api/events/:id/requests` | Event owner, Admin, DEO | View registrations and request progress |
 | GET | `/api/requests` | Any signed-in user | Role-scoped request list; reviewers use `?queue=true` for their pending queue |
 | POST | `/api/requests/outside` | Student | Submit outside-college request plus registration proof |
 | GET, PATCH | `/api/requests/:id` | Scoped / request owner | View request / edit and resubmit a returned request |

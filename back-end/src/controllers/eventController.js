@@ -4,7 +4,9 @@ import { HttpError } from '../utils/httpError.js';
 import { registerForEvent } from '../services/workflowService.js';
 
 export async function createEvent(req, res) {
-  const event = await Event.create({ ...req.body, createdBy: req.user._id });
+  const allowed = ['name', 'hostCollege', 'startAt', 'endAt', 'venue', 'registrationDetails', 'registrationUrl', 'category', 'eligibleDepartments', 'eligibleClasses', 'eligibleStudentIds', 'capacity', 'status'];
+  const input = Object.fromEntries(allowed.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
+  const event = await Event.create({ ...input, createdBy: req.user._id });
   res.status(201).json({ data: { event } });
 }
 
@@ -12,11 +14,20 @@ export async function listEvents(req, res) {
   const filter = {};
   if (req.user.role === 'student') filter.status = 'published';
   if (req.user.role === 'event_coordinator') filter.createdBy = req.user._id;
-  if (req.query.status && req.user.role !== 'student') filter.status = req.query.status;
+  if (!['student', 'event_coordinator', 'admin'].includes(req.user.role)) filter.status = 'published';
+  if (req.query.status && ['event_coordinator', 'admin'].includes(req.user.role)) filter.status = req.query.status;
   if (req.query.department && req.user.role !== 'student') filter.eligibleDepartments = req.query.department;
   const events = await Event.find(filter).populate('createdBy', 'name').sort({ startAt: 1 }).limit(300);
   const visible = req.user.role === 'student' ? events.filter(e => eligible(e, req.user)) : events;
-  res.json({ data: { events: visible } });
+  const safeEvents = visible.map(event => {
+    const item = event.toObject();
+    item.registrationCount = event.registrations.length;
+    const owns = ['admin', 'event_coordinator'].includes(req.user.role) &&
+      (req.user.role === 'admin' || String(event.createdBy?._id || event.createdBy) === String(req.user._id));
+    if (!owns) delete item.registrations;
+    return item;
+  });
+  res.json({ data: { events: safeEvents } });
 }
 
 function eligible(event, user) {
@@ -31,8 +42,11 @@ export async function getEvent(req, res) {
   if (req.user.role === 'student' && (event.status !== 'published' || !eligible(event, req.user))) throw new HttpError(404, 'Event not found.');
   if (req.user.role === 'event_coordinator' && String(event.createdBy._id) !== String(req.user._id)) throw new HttpError(403, 'You do not manage this event.');
   const isOwner = req.user.role === 'admin' || String(event.createdBy._id) === String(req.user._id);
+  if (!isOwner && event.status !== 'published') throw new HttpError(404, 'Event not found.');
+  const registrationCount = event.registrations.length;
   if (isOwner) await event.populate('registrations.student', 'name studentId department classSection');
   const result = event.toObject();
+  result.registrationCount = registrationCount;
   if (!isOwner) delete result.registrations;
   res.json({ data: { event: result } });
 }
@@ -41,7 +55,7 @@ export async function updateEvent(req, res) {
   const event = await Event.findById(req.params.id);
   if (!event) throw new HttpError(404, 'Event not found.');
   if (req.user.role !== 'admin' && String(event.createdBy) !== String(req.user._id)) throw new HttpError(403, 'You do not manage this event.');
-  const allowed = ['name', 'hostCollege', 'startAt', 'endAt', 'venue', 'registrationDetails', 'registrationUrl', 'eligibleDepartments', 'eligibleClasses', 'eligibleStudentIds', 'capacity', 'status'];
+  const allowed = ['name', 'hostCollege', 'startAt', 'endAt', 'venue', 'registrationDetails', 'registrationUrl', 'category', 'eligibleDepartments', 'eligibleClasses', 'eligibleStudentIds', 'capacity', 'status'];
   for (const key of allowed) if (req.body[key] !== undefined) event[key] = req.body[key];
   await event.save();
   res.json({ data: { event } });

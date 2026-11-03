@@ -9,7 +9,10 @@ const api = {
     const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      throw new Error(body.error?.message || `Request failed (${response.status}).`);
+      const error = new Error(body.error?.message || `Request failed (${response.status}).`);
+      error.status = response.status;
+      if (response.status === 401) window.dispatchEvent(new Event("campusod:session-expired"));
+      throw error;
     }
     return response.status === 204 ? null : response.json();
   },
@@ -29,7 +32,7 @@ const api = {
   async download(path, name) {
     const token = sessionStorage.getItem("campusOD.token");
     const response = await fetch(`${API_BASE}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.error?.message || "Could not open this file."); }
+    if (!response.ok) { const body = await response.json().catch(() => ({})); const error = new Error(body.error?.message || "Could not open this file."); error.status = response.status; if (response.status === 401) window.dispatchEvent(new Event("campusod:session-expired")); throw error; }
     const url = URL.createObjectURL(await response.blob());
     const link = document.createElement("a"); link.href = url; link.download = name || "evidence"; link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -52,7 +55,7 @@ function apiEvent(row) {
     registration: row.registrationDetails, registrationUrl: row.registrationUrl || "",
     eligibility: row.eligibleDepartments?.length ? row.eligibleDepartments.join(", ") : "All departments",
     eligibleDepartments: row.eligibleDepartments || [], category: row.category || "Academic",
-    registered: row.registrations?.length || 0, status: row.status
+    registered: row.registrationCount ?? row.registrations?.length ?? 0, status: row.status
   };
 }
 function apiRequest(row, attendance) {
