@@ -1,20 +1,35 @@
-# Campus OD — Event & On-Duty prototype
+# Campus OD
 
-Open `index.html` in a modern browser. No build step, package install, or server is required.
+College event and On-Duty request workflow. The interface is plain HTML, CSS, and JavaScript; the API is Node.js, Express, and MongoDB.
 
-Choose a role on the sign-in screen to preview the Student, Event Coordinator, Class In-charge, Department Coordinator, Director, or DEO workspace. The sample requests and events persist in that browser using local storage.
+## Run the backend
 
-This is a front-end prototype. Uploaded files are represented by their selected file names; files are not sent to a server. To restore the original sample data, clear this site’s local storage for the page.
+From `back-end`, copy `.env.example` to `.env`, set `MONGODB_URI` and a unique `JWT_SECRET` of at least 32 characters, then run:
 
-## Demo sign-in
+```powershell
+npm install
+npm run create-admin
+npm run dev
+```
 
-The landing screen provides sign-in entry points for Student, Event Coordinator, Class In-charge, Department Coordinator, Director, and DEO. Use any ID/email and the password `demo123`. Sign out from the top bar to return to the role selection screen. This is a UI prototype; sign-in is not backed by real identity verification.
+The API listens at `http://localhost:5000`. The first admin creates student and staff accounts. Reviewer department and class assignments are used by the API to route requests.
 
-## Code map
+## Run the website
 
-- `index.html` is the entry page and loads the stylesheet and JavaScript files.
-- `styles.css` contains layout, component, responsive, and sign-in styles.
-- `js/data.js` holds sample records, roles, navigation labels, and shared helpers.
-- `js/pages.js` builds the dashboards, forms, queues, and detail pages.
-- `js/actions.js` handles sign-in, navigation, event registration, reviews, and attendance.
+Serve this project folder from a local web server (for example, VS Code Live Server). The default API address in `js/api.js` is `http://localhost:5000/api`; the API's `CLIENT_ORIGIN` must match the web server origin. Set `window.CAMPUS_OD_API` before `js/api.js` if the API is hosted elsewhere.
 
+Sign in with an account created by the admin to use live backend data. The separate **Preview** option uses sample data saved only in the browser; it does not create real requests or verify an identity.
+
+## Workflows
+
+- **Inter-college:** Coordinator publishes event → eligible student registers → student uploads certificate and missed sessions → Class In-charge → Department Coordinator → Director → DEO records attendance.
+- **Outside-college:** Student submits event details, missed sessions, and registration proof → Class In-charge → Department Coordinator → student uploads certificate to the same request → Director → DEO records attendance.
+
+Rejections stop the review chain. Correction returns keep the request open and preserve earlier decisions. Attendance becomes recorded only after the DEO saves the selected sessions.
+
+## Project map
+
+- `index.html`, `styles.css`, `js/`: website and browser API client.
+- `back-end/src/`: API server, MongoDB models, access control, uploads, and workflow rules.
+- `back-end/scripts/create-admin.js`: creates the initial administrator.
+- `back-end/README.md`: endpoint reference, payload formats, and deployment notes.

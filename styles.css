@@ -1125,6 +1125,42 @@ select:focus {
   font-size: 9px;
   color: #88939e;
 }
+.demo-access {
+  margin-top: 26px;
+  padding-top: 17px;
+  border-top: 1px solid var(--line);
+}
+.demo-access summary {
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.demo-access .auth-note {
+  display: block;
+  margin: 9px 0 12px;
+}
+.demo-row {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.demo-row .filter {
+  min-width: 0;
+  flex: 1;
+}
+.session-choice {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+}
+.session-choice input {
+  accent-color: var(--green);
+}
 .auth-back {
   margin-bottom: 15px;
 }
